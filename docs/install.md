@@ -35,28 +35,29 @@ If you want to enable and use the Azure AD Domain Services, it requires your ser
 
 **Step 1:** Install Terraform and Ansible on your Linux system
 
-Download and install Terraform for your platform --> https://www.terraform.io/downloads.html
+Download and install Terraform for your platform --> https://www.terraform.io/docs/cli/install/apt.html or follow process below for Ubuntu.
 
-Install Ansible
+Update VM and Install Ansible
 ```
+$ sudo apt-get update
 $ sudo apt-get install ansible
+```
+
+Install Terraform on Ubuntu
+```
+$ sudo apt-get update && sudo apt-get install -y gnupg software-properties-common curl
+$ curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+$ sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+$ sudo apt-get update && sudo apt-get install terraform
 ```
 
 **Step 2:** Set up an Azure Service Principal on your Azure subscription that allows Terraform to automate tasks under your Azure subscription.
 
 
-Follow the exact instructions in this Microsoft link:
+Follow the instructions in this Microsoft link:
 https://docs.microsoft.com/en-us/azure/developer/terraform/getting-started-cloud-shell
 
-These were the two basic commands that were run based on this link above:
-```
-az ad sp create-for-rbac --role="Owner" --scopes="/subscriptions/<subscription_id>"
-```
-and this command below.  From my testing I needed to use a role of "Owner" instead of "Contributor".  Default Microsoft documentation shows role of "Contributor" which resulted in errors.  
-```
-az login --service-principal -u <service_principal_name> -p "<service_principal_password>" --tenant "<service_principal_tenant>"
-```
-Take note of the following which we will use next to configure our Terraform Azure provider:
+In the following commands you'll want to take note of the following fields which we will use next to configure our Terraform Azure provider. More details below:
 ```
 subscription_id = ""
 client_id = ""
@@ -64,9 +65,28 @@ client_secret = ""
 tenant_id = ""
 ```
 
+In Azure Portal Open Cloud Shell - Mount a storage device and Login
+```
+az login
+```
+Browse to the URL and enter the code.
+
+Save the ID from the output from az login as the subscription_id.
+
+Create the Service Principal making sure to use the Owner role. The contributor role as mentioned in the instructions above will cause errors.
+```
+az ad sp create-for-rbac --role="Owner" --scopes="/subscriptions/<subscription_id>"
+```
+The output from the command above map to the variables in terraform as such: appId = client_id, password = client_secret, and tenant as tenant_id. Make sure you save the client_id, client_secret and tenant_id.
+
+Login with the service principal account.
+```
+az login --service-principal -u <service_principal_name> -p "<service_principal_password>" --tenant "<service_principal_tenant>"
+```
+
 **Step 3:** Clone this repo
 ```
-$ git clone https://github.com/iknowjason/PurpleCloud.git
+$ git clone https://github.com/akn0w/PurpleCloud.git
 ```
 
 **Step 4:** First, copy the terraform.tfexample to terraform.tfvars.  Next, using your favorite text editor, edit the terraform.tfvars file for the Azure resource provider matching your Azure Service Principal credentials.  
